@@ -1,7 +1,7 @@
 @extends('master')
 @section('content')
     <div class="col-md-8 blog-main">
-        <h3 class="pb-3 mb-4 border-bottom text-center">Category List</h3>
+        <h3 class="pb-3 mb-4 border-bottom text-center">Post List</h3>
         @if(session()->has('message'))
             <div class="alert alert-{{ session('type') }}">
                 {{ session('message') }}

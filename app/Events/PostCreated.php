@@ -14,8 +14,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 class PostCreated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
-    private $post;
-
+    public $post;
     /**
      * Create a new event instance.
      *

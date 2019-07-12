@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Frontend;
+namespace App\Http\Controllers\Backend;
 
 use App\Models\Category;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Image;
 
-class CategoryController extends Controller
+class PostController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,8 +18,11 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $data['categories'] = Category::select('id', 'name', 'slug', 'status')->paginate(10);
-        return view('backend.category.index', $data);
+        $data['posts'] = Post::with('category', 'user')
+            ->select('id', 'user_id','category_id','title','status')
+            ->orderByDesc('id')
+            ->paginate(10);
+        return view('backend.post.index', $data);
     }
 
     /**
@@ -27,7 +32,8 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        return view('backend.category.create');
+        $data['categories'] = Category::select('id', 'name')->get();
+        return view('backend.post.create', $data);
     }
 
     /**
@@ -38,8 +44,9 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
+//        return $request;
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:categories,name',
+            'title' => 'required',
             'status' => 'required|between:0,1',
         ]);
 
@@ -47,12 +54,20 @@ class CategoryController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $category = new Category();
-        $category->name = $request->name;
-        $category->slug = str_slug(trim($request->name));
-        $category->status = $request->status;
-        $category->save();
-        session()->flash('message', 'Category Create Successfully');
+        $image = $request->file('thumbnail_path');
+        $image_name = rand(11111, 99999) . '_' . $image->getClientOriginalName();
+        $photo_image = 'post_image/';
+        Image::make($image)->save($photo_image . $image_name);
+
+        $post = new Post();
+        $post->title = $request->title;
+        $post->category_id = $request->category_id;
+        $post->user_id = auth()->user()->id;
+        $post->content = $request->post_content;
+        $post->status = $request->status;
+        $post->thumbnail_path = $photo_image . $image_name;
+        $post->save();
+        session()->flash('message', 'Category Post Successfully');
         session()->flash('type', 'success');
         return redirect()->back();
     }
@@ -65,9 +80,9 @@ class CategoryController extends Controller
      */
     public function show($id)
     {
-        $data['category'] = Category::with('posts','posts.user')->select('id', 'name', 'slug', 'status','created_at')->find($id);
-//        dd($data);
-        return view('backend.category.show', $data);
+        $post = Post::with('category', 'user')->where('id', $id)->first();
+//        return $post;
+        return view('backend.post.show', compact('post'));
     }
 
     /**
@@ -79,7 +94,7 @@ class CategoryController extends Controller
     public function edit($id)
     {
         $category = Category::find($id);
-        return view('backend.category.edit', compact('category'));
+        return view('backend.post.edit', compact('category'));
     }
 
     /**
